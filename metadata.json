@@ -1,0 +1,9 @@
+{
+  "name": "MathMaster 12-Week (沪教版专项)",
+  "description": "针对3-5年级沪教版数学优化的12周闯关式学习系统。涵盖计算自动化、应用题模型、方程思维及几何空间，内置费曼复盘机制。",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

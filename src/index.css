@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-blue: #4A90E2;
+  --color-accent-orange: #FF9F43;
+  --color-bg-vibrant: #F0F4F8;
+  --color-card-white: #FFFFFF;
+  --color-text-main: #2C3E50;
+  --color-text-vmuted: #7F8C8D;
+  --color-success-green: #27AE60;
+
+  --font-vibrant: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  
+  --shadow-vibrant: 0 8px 0 rgba(0, 0, 0, 0.05);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-vibrant);
+    background-color: var(--color-bg-vibrant);
+    color: var(--color-text-main);
+  }
+}
+
