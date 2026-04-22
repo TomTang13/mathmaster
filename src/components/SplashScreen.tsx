@@ -4,25 +4,26 @@ import { Heart, Quote, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const QUOTES = [
-  { text: "你现在偷的懒，未来真的会找你对线。", type: "philosophy", author: "10后醒世恒言" },
-  { text: "别等状态来了才开始，你一开始状态就不会在。", type: "philosophy", author: "行动派" },
-  { text: "没人会突然变厉害，都是悄悄撑过很多烂日子。", type: "philosophy", author: "过来人" },
-  { text: "你以为你在摆烂，其实时间在把你甩开。", type: "philosophy", author: "时间观察者" },
-  { text: "可以慢一点，但别一直停在“等会儿再说”。", type: "philosophy", author: "清醒指引" },
-  { text: "不用很燃，但至少别一直在降温。", type: "philosophy", author: "生活逻辑" },
-  { text: "你今天做的每个小决定，都会变成你的默认人生。", type: "philosophy", author: "策略师" },
-  { text: "有些路不是你选的，是你不选之后自动给你的。", type: "philosophy", author: "成长真相" },
-  { text: "你不用赢所有人，但别输给昨天那个你。", type: "philosophy", author: "自我博弈" },
-  { text: "清醒一点：没人救你，但你也没那么容易完蛋。", type: "philosophy", author: "硬核导师" },
-  { text: "孩子，这一年不过是漫长人生中的一个休止符，重新拿起书本的你，比谁都勇敢。", type: "father", author: "深爱你的爸爸" },
-  { text: "只要你还想学，爸爸永远会在后面推你一把。", type: "father", author: "你最坚实的后盾" }
+  { text: "在这个世界上，只有你可以决定自己的价值。", type: "philosophy", author: "拉克丝 · 英雄联盟" },
+  { text: "我们的行为定义了我们的身份，而非我们的意图。", type: "philosophy", author: "蝙蝠侠 · 蝙蝠侠：阿卡姆骑士" },
+  { text: "生命的起源并不重要，重要的是你如何使用生命这份赠礼。", type: "philosophy", author: "超梦 · 精灵宝可梦" },
+  { text: "不是被迫离开，是我决定为自己的人生出发。", type: "philosophy", author: "希尔瓦娜斯 · 魔兽世界" },
+  { text: "当你从梦中醒来，现实世界的挑战才刚刚开始。", type: "philosophy", author: "末影龙 · 我的世界" },
+  { text: "无论路有多远，只要心中有光，门就会为你敞开。", type: "philosophy", author: "空 · 王国之心" },
+  { text: "不要因为结束而哭泣，要因为发生过而微笑。", type: "philosophy", author: "温斯顿 · 守望先锋" },
+  { text: "如果你的生活没有方向，那就去寻找星星。", type: "philosophy", author: "索拉卡 · 英雄联盟" },
+  { text: "世界并不完美，但我们仍需为此奋斗。", type: "philosophy", author: "克劳德 · 最终幻想VII" },
+  { text: "真正的勇气，是在害怕的时候依然向前。", type: "philosophy", author: "索尔 · 诸神的黄昏" },
+  { text: "孩子，这一年不过是漫长人生中的一个休止符，重新拿起书本的你，比谁都勇敢。", type: "father", author: "深爱你的爸爸" }
 ];
 
 interface SplashScreenProps {
   onComplete: () => void;
+  username?: string;
+  error?: boolean;
 }
 
-export default function SplashScreen({ onComplete }: SplashScreenProps) {
+export default function SplashScreen({ onComplete, username, error = false }: SplashScreenProps) {
   const [quote, setQuote] = useState(QUOTES[0]);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -84,10 +85,11 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             >
               <button
                 onClick={handleStart}
-                className="w-full bg-primary-blue text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                disabled={error}
+                className={`w-full py-5 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center gap-2 ${error ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-primary-blue text-white shadow-xl shadow-blue-200 group'}`}
               >
-                开启回归之旅
-                <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                {error ? '密钥迷路中，请重新输入' : '开启回归之旅'}
+                {!error && <ChevronRight className="group-hover:translate-x-1 transition-transform" />}
               </button>
             </motion.div>
           </div>
@@ -98,7 +100,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             transition={{ delay: 1.2 }}
             className="absolute bottom-10 text-text-vmuted text-xs font-semibold tracking-widest uppercase"
           >
-            欢迎回来，学霸
+            欢迎回来，{username || '学霸'}
           </motion.div>
         </motion.div>
       )}

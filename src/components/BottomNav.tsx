@@ -9,10 +9,10 @@ interface BottomNavProps {
 
 export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   const tabs = [
-    { id: 'today', icon: LayoutGrid, label: '今日任务' },
-    { id: 'map', icon: Map, label: '学习地图' },
-    { id: 'mistake', icon: Target, label: '错题靶场' },
-    { id: 'stats', icon: BarChart2, label: '数据中心' },
+    { id: 'today', icon: LayoutGrid, label: '每日委托' },
+    { id: 'map', icon: Map, label: '提瓦特指南' },
+    { id: 'mistake', icon: Target, label: '深境螺旋' },
+    { id: 'stats', icon: BarChart2, label: '图鉴中心' },
   ];
 
   return (

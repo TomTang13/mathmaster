@@ -29,7 +29,7 @@ export default function StatsView({ userState }: StatsViewProps) {
   return (
     <div className="pb-32 px-6 pt-8 max-w-lg mx-auto space-y-8">
       <header className="flex justify-between items-center px-4">
-        <h1 className="text-2xl font-bold text-text-main">数据中心</h1>
+        <h1 className="text-2xl font-bold text-text-main">图鉴中心</h1>
         <button className="p-2 bg-white border-2 border-[#E1E8EE] text-primary-blue rounded-full shadow-sm">
           <Share2 size={20} />
         </button>
@@ -96,8 +96,8 @@ export default function StatsView({ userState }: StatsViewProps) {
             本周战报
           </div>
           <h2 className="text-2xl font-bold leading-tight mb-4 text-text-main">
-            你已击败了全球 <br /> 
-            <span className="text-primary-blue text-4xl">92%</span> 的同龄人
+            你比上周的自己 <br /> 
+            进步了 <span className="text-primary-blue text-4xl">12%</span>
           </h2>
           <p className="text-text-vmuted text-sm leading-relaxed mb-8 font-medium">
             本周你成功消灭了“相遇问题”这个拦路虎，方程思维初步觉醒，计算稳定性显著提升。
