@@ -6,7 +6,7 @@ import { DayTask } from '../types';
 import QuizInterface from '../components/QuizInterface';
 import { CURRICULUM_DATA } from '../data/curriculum';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = '/api';
 
 const getQuestionType = (questionTypeId: number): string => {
   switch (questionTypeId) {

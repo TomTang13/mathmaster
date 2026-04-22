@@ -15,7 +15,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
 
   useEffect(() => {
     // 从后端API获取课程数据
-    fetch('http://localhost:3001/weeks')
+    fetch('/api/weeks')
       .then(res => res.json())
       .then(data => {
         // 转换数据格式以匹配前端需求
@@ -59,7 +59,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
     setWeekLoading(true);
     try {
       // 获取该周的核心奥义数据
-      const response = await fetch(`http://localhost:3001/key-knowledge/week/${week.week}`);
+      const response = await fetch(`/api/key-knowledge/week/${week.week}`);
       const keyKnowledgeData = await response.json();
       
       // 转换核心奥义数据格式
@@ -316,7 +316,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
                                 {/* PDF按钮 */}
                                 {point.filename && (
                                   <button 
-                                    onClick={() => onPdfClick(`http://localhost:3001/file/${point.filename}`)}
+                                    onClick={() => onPdfClick(`/api/file/${point.filename}`)}
                                     className="w-6 h-6 rounded-full border-2 border-primary-blue/30 flex items-center justify-center transition-colors hover:bg-primary-blue/10"
                                     title="打开PDF文档"
                                   >

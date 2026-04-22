@@ -96,6 +96,9 @@ export class UsersService {
   async findByTokenWithStreak(token: string): Promise<{ user: User; streak: number }> {
     const user = await this.findByToken(token);
     
+    // 记录本次登录
+    await this.recordLogin(user.id);
+    
     // 计算累计登录天数
     const streak = await this.getConsecutiveLoginDays(user.id);
     

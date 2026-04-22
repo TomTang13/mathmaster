@@ -60,7 +60,7 @@ const INITIAL_USER_STATE: UserState = {
   ]
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = '/api';
 console.log('API Base URL:', API_BASE);
 
 export default function App() {
@@ -175,9 +175,34 @@ export default function App() {
   };
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const t = urlParams.get('t');
-    const admin = urlParams.get('admin');
+    // 调试信息
+    console.log('Window location:', window.location);
+    console.log('Window location search:', window.location.search);
+    
+    // 兼容旧浏览器的URL参数获取方法
+    let t = null;
+    let admin = null;
+    
+    try {
+      // 现代浏览器方法
+      const urlParams = new URLSearchParams(window.location.search);
+      t = urlParams.get('t');
+      admin = urlParams.get('admin');
+      console.log('Using URLSearchParams - t:', t, 'admin:', admin);
+    } catch (e) {
+      // 兼容旧浏览器
+      const search = window.location.search.substring(1);
+      const params = search.split('&');
+      for (const param of params) {
+        const [key, value] = param.split('=');
+        if (key === 't') {
+          t = decodeURIComponent(value);
+        } else if (key === 'admin') {
+          admin = decodeURIComponent(value);
+        }
+      }
+      console.log('Using fallback method - t:', t, 'admin:', admin);
+    }
 
     if (admin) {
       // 管理员模式，不需要登录
@@ -187,9 +212,23 @@ export default function App() {
     }
 
     if (t) {
-      fetch(`${API_BASE}/users/t/${t}`)
-        .then(res => res.json())
+      console.log('Token found:', t);
+      console.log('API URL:', `${API_BASE}/users/t/${t}`);
+      
+      // 添加超时处理
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+      
+      fetch(`${API_BASE}/users/t/${t}`, {
+        signal: controller.signal
+      })
+        .then(res => {
+          clearTimeout(timeoutId);
+          console.log('API response status:', res.status);
+          return res.json();
+        })
         .then(data => {
+          console.log('API response data:', data);
           if (data && data.user && data.user.username) {
             setLoggedInUser({ 
               username: data.user.username, 
@@ -209,14 +248,17 @@ export default function App() {
             }
             setLoginError(false);
           } else {
+            console.log('Invalid user data:', data);
             setLoginError(true);
           }
         })
         .catch(err => {
+          clearTimeout(timeoutId);
           console.error('Login failed:', err);
           setLoginError(true);
         });
     } else {
+      console.log('No token found in URL');
       // 当没有t参数时，设置loginError为true，只显示引导页
       setLoginError(true);
     }
