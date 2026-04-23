@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 const DataGeneratorAdmin: React.FC = () => {
   const [knowledgeIds, setKnowledgeIds] = useState<string>('7');
@@ -20,7 +21,7 @@ const DataGeneratorAdmin: React.FC = () => {
     setMessage('正在生成数据...');
 
     try {
-      const response = await fetch('http://localhost:3001/admin/generate-data', {
+      const response = await fetch(`${API_BASE_URL}/admin/generate-data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +57,7 @@ const DataGeneratorAdmin: React.FC = () => {
     setMessage('正在查询数据...');
 
     try {
-      const response = await fetch('http://localhost:3001/admin/query-data', {
+      const response = await fetch(`${API_BASE_URL}/admin/query-data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

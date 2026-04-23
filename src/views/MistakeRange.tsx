@@ -3,6 +3,7 @@ import { Mic, Search, EyeOff, Flame, AlertTriangle, ShieldCheck, ChevronDown, Ch
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { MistakeItem } from '../types';
+import { API_BASE_URL } from '../config';
 
 interface QuestionDetail {
   questionId: string;
@@ -55,7 +56,7 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
   // 获取错题详细信息
   const fetchQuestionDetail = async (questionId: string) => {
     try {
-      const response = await fetch(`/api/questions/${questionId}`);
+      const response = await fetch(`${API_BASE_URL}/questions/${questionId}`);
       if (response.ok) {
         const data = await response.json();
         setQuestionDetails(prev => ({
@@ -101,7 +102,7 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
     
     try {
       setLoading(true);
-      const response = await fetch(`/api/mistakes/${userId}/question/${questionId}/hidden`, {
+      const response = await fetch(`${API_BASE_URL}/mistakes/${userId}/question/${questionId}/hidden`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +224,7 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
       const formData = new FormData();
       formData.append('audio', blob, `${questionId}.wav`);
       
-      const response = await fetch(`/api/users/${userId}/audio?questionId=${questionId}`, {
+      const response = await fetch(`${API_BASE_URL}/users/${userId}/audio?questionId=${questionId}`, {
         method: 'POST',
         body: formData,
       });

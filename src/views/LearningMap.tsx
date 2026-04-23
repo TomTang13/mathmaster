@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Star, ShieldCheck, Castle, Wind, Zap, Flame, Compass, MapPin, Sparkles, Droplets, Mountain, Leaf, Snowflake, X, BookOpen, Lightbulb, Copy, Check, FileText } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WeekPlan } from '../types';
+import { API_BASE_URL } from '../config';
 
 interface LearningMapProps {
   currentWeek: number;
@@ -15,7 +16,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
 
   useEffect(() => {
     // 从后端API获取课程数据
-    fetch('/api/weeks')
+    fetch(`${API_BASE_URL}/weeks`)
       .then(res => res.json())
       .then(data => {
         // 转换数据格式以匹配前端需求
@@ -59,7 +60,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
     setWeekLoading(true);
     try {
       // 获取该周的核心奥义数据
-      const response = await fetch(`/api/key-knowledge/week/${week.week}`);
+      const response = await fetch(`${API_BASE_URL}/key-knowledge/week/${week.week}`);
       const keyKnowledgeData = await response.json();
       
       // 转换核心奥义数据格式
@@ -316,7 +317,7 @@ export default function LearningMap({ currentWeek, onPdfClick }: LearningMapProp
                                 {/* PDF按钮 */}
                                 {point.filename && (
                                   <button 
-                                    onClick={() => onPdfClick(`/api/file/${point.filename}`)}
+                                    onClick={() => onPdfClick(`${API_BASE_URL}/file/${point.filename}`)}
                                     className="w-6 h-6 rounded-full border-2 border-primary-blue/30 flex items-center justify-center transition-colors hover:bg-primary-blue/10"
                                     title="打开PDF文档"
                                   >

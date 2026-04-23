@@ -40,6 +40,7 @@ import PdfReader from './views/PdfReader';
 import DataGeneratorAdmin from './views/DataGeneratorAdmin';
 import { CURRICULUM_DATA } from './data/curriculum';
 import { UserState } from './types';
+import { API_BASE_URL } from './config';
 
 const INITIAL_USER_STATE: UserState = {
   currentWeek: 1,
@@ -54,13 +55,13 @@ const INITIAL_USER_STATE: UserState = {
     statistics: 55,
   },
   mistakes: [
-    { id: 'm1', title: '相遇向问题：匀速运动中距离与时间关系', category: '解答题', date: '2026-04-16', count: 2 },
-    { id: 'm2', title: '分数乘法中分子分母约分失误', category: '填充题', date: '2026-04-15', count: 1 },
+    { id: 'm1', title: '相遇向问题：匀速运动中距离与时间关系', category: '解答题', date: '2026-04-14', count: 2 },
+    { id: 'm2', title: '分数乘法中分子分母约分失误', category: '填充题', date: '2026-04-13', count: 1 },
     { id: 'm3', title: '长方形表面积漏算两个侧面', category: '解答题', date: '2026-04-14', count: 3 },
   ]
 };
 
-const API_BASE = '/api';
+const API_BASE = API_BASE_URL;
 console.log('API Base URL:', API_BASE);
 
 export default function App() {
@@ -96,6 +97,7 @@ export default function App() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [newLevel, setNewLevel] = useState(1);
   const [previousLevel, setPreviousLevel] = useState(1);
+  const [loginRefreshKey, setLoginRefreshKey] = useState(0);
 
   useEffect(() => {
     // 随机设置页面标题，添加游戏icon
@@ -241,10 +243,11 @@ export default function App() {
             if (data.streak) {
               setUserState(prev => ({ ...prev, continuousDays: data.streak }));
             }
-            // 获取用户错题数据
+            // 只保存用户ID，不立即获取错题数据，等用户进入错题模块再获取
             if (data.user.id) {
               setCurrentUserId(data.user.id);
-              fetchUserMistakes(data.user.id);
+              // 触发登录刷新，让任务数据重新加载
+              setLoginRefreshKey(prev => prev + 1);
             }
             setLoginError(false);
           } else {
@@ -263,6 +266,14 @@ export default function App() {
       setLoginError(true);
     }
   }, []);
+
+  // 当用户切换到错题模块时，获取错题数据
+  useEffect(() => {
+    if (activeTab === 'mistake' && currentUserId) {
+      console.log('User switched to mistake tab, fetching mistakes...');
+      fetchUserMistakes(currentUserId);
+    }
+  }, [activeTab, currentUserId]);
 
   const handleTaskClick = (taskId: string) => {
     setCurrentTasks(prev => prev.map(t => t.id === taskId ? { ...t, isCompleted: true } : t));
@@ -292,7 +303,7 @@ export default function App() {
     
     switch (activeTab) {
       case 'today':
-        return <TodayTasks tasks={currentTasks} onTaskClick={handleTaskClick} onPdfClick={handlePdfClick} week={userState.currentWeek} day={userState.currentDay} level={userState.level} streak={loggedInUser?.streak || userState.continuousDays} username={loggedInUser?.username} userId={currentUserId} onLevelUp={handleLevelUp} />;
+        return <TodayTasks tasks={currentTasks} onTaskClick={handleTaskClick} onPdfClick={handlePdfClick} week={userState.currentWeek} day={userState.currentDay} level={userState.level} streak={loggedInUser?.streak || userState.continuousDays} username={loggedInUser?.username} userId={currentUserId} onLevelUp={handleLevelUp} loginRefreshKey={loginRefreshKey} />;
       case 'map':
         return <LearningMap currentWeek={userState.currentWeek} onPdfClick={handlePdfClick} />;
       case 'mistake':
@@ -302,9 +313,9 @@ export default function App() {
           onRefresh={fetchUserMistakes}
         />;
       case 'stats':
-        return <StatsView userState={userState} />;
+        return <StatsView userState={userState} userId={currentUserId} />;
       default:
-        return <TodayTasks tasks={currentTasks} onTaskClick={handleTaskClick} onPdfClick={handlePdfClick} week={userState.currentWeek} day={userState.currentDay} level={userState.level} streak={loggedInUser?.streak || userState.continuousDays} username={loggedInUser?.username} userId={currentUserId} onLevelUp={handleLevelUp} />;
+        return <TodayTasks tasks={currentTasks} onTaskClick={handleTaskClick} onPdfClick={handlePdfClick} week={userState.currentWeek} day={userState.currentDay} level={userState.level} streak={loggedInUser?.streak || userState.continuousDays} username={loggedInUser?.username} userId={currentUserId} onLevelUp={handleLevelUp} loginRefreshKey={loginRefreshKey} />;
     }
   };
 

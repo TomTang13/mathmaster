@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2, AlertCircle, ArrowRight, Star, Trophy, Copy, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Question } from '../types';
+import { API_BASE_URL } from '../config';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = API_BASE_URL;
 
 interface QuizInterfaceProps {
   questions: Question[];

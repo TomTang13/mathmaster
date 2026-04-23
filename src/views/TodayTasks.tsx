@@ -5,8 +5,9 @@ import { cn } from '../lib/utils';
 import { DayTask } from '../types';
 import QuizInterface from '../components/QuizInterface';
 import { CURRICULUM_DATA } from '../data/curriculum';
+import { API_BASE_URL } from '../config';
 
-const API_BASE = '/api';
+const API_BASE = API_BASE_URL;
 
 const getQuestionType = (questionTypeId: number): string => {
   switch (questionTypeId) {
@@ -30,9 +31,10 @@ interface TodayTasksProps {
   username?: string;
   userId: number | null;
   onLevelUp?: (newLevel: number) => void;
+  loginRefreshKey?: number;
 }
 
-export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, level, streak, username, userId, onLevelUp }: TodayTasksProps) {
+export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, level, streak, username, userId, onLevelUp, loginRefreshKey = 0 }: TodayTasksProps) {
   const [selectedTask, setSelectedTask] = useState<DayTask | null>(null);
   const [isQuizActive, setIsQuizActive] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -344,6 +346,14 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
 
   // 处理错题回顾点击
   const handleReviewMistakesClick = async () => {
+    // 先加载错题回顾数据
+    await fetchReviewMistakes();
+    
+    if (reviewMistakes.length === 0) {
+      alert('目前没有需要回顾的错题');
+      return;
+    }
+    
     // 创建错题回顾任务
     const reviewTask: DayTask = {
       id: 'review-mistakes',
@@ -379,9 +389,11 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
   };
 
   useEffect(() => {
-    refreshTasksData();
-    fetchReviewMistakes();
-  }, [week, day, level, userId]);
+    if (userId && userId > 0) {
+      refreshTasksData();
+      // 不在初始化时加载错题回顾数据，等到用户需要时再加载
+    }
+  }, [week, day, level, userId, loginRefreshKey]);
 
   const currentWeekPlan = CURRICULUM_DATA.find(w => w.week === week);
 

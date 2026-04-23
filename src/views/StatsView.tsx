@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import { UserState } from '../types';
-import { Share2, ArrowUpRight } from 'lucide-react';
+import { Share2, ArrowUpRight, BarChart3 } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { AllModulesRadarCharts, ModuleData } from '../components/KnowledgeRadarChart';
+import { API_BASE_URL } from '../config';
 
 interface StatsViewProps {
   userState: UserState;
+  userId?: number | null;
 }
 
-export default function StatsView({ userState }: StatsViewProps) {
+export default function StatsView({ userState, userId }: StatsViewProps) {
+  const [moduleStats, setModuleStats] = useState<ModuleData[]>([]);
+  const [showKnowledgeStats, setShowKnowledgeStats] = useState(false);
+
+  // 获取用户知识点统计数据
+  useEffect(() => {
+    if (userId && showKnowledgeStats) {
+      fetch(`${API_BASE_URL}/key-knowledge/user/${userId}/module-stats`)
+        .then(res => res.json())
+        .then(data => {
+          console.log('Module stats data:', data);
+          setModuleStats(data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch module stats:', err);
+        });
+    }
+  }, [userId, showKnowledgeStats]);
+
   const radarData = [
     { subject: '计算自动化', A: userState.mastery.calculation, fullMark: 100 },
     { subject: '应用题模型', A: userState.mastery.wordProblem, fullMark: 100 },
@@ -30,10 +52,31 @@ export default function StatsView({ userState }: StatsViewProps) {
     <div className="pb-32 px-6 pt-8 max-w-lg mx-auto space-y-8">
       <header className="flex justify-between items-center px-4">
         <h1 className="text-2xl font-bold text-text-main">图鉴中心</h1>
-        <button className="p-2 bg-white border-2 border-[#E1E8EE] text-primary-blue rounded-full shadow-sm">
-          <Share2 size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          {userId && (
+            <button
+              onClick={() => setShowKnowledgeStats(!showKnowledgeStats)}
+              className={cn(
+                "p-2 rounded-full shadow-sm transition-all",
+                showKnowledgeStats 
+                  ? "bg-primary-blue text-white border-2 border-primary-blue" 
+                  : "bg-white border-2 border-[#E1E8EE] text-primary-blue"
+              )}
+            >
+              <BarChart3 size={20} />
+            </button>
+          )}
+          <button className="p-2 bg-white border-2 border-[#E1E8EE] text-primary-blue rounded-full shadow-sm">
+            <Share2 size={20} />
+          </button>
+        </div>
       </header>
+
+      {showKnowledgeStats && userId && (
+        <div className="space-y-4">
+          <AllModulesRadarCharts data={moduleStats} userId={userId} />
+        </div>
+      )}
 
       {/* Radar Mastery Chart */}
       <div className="bg-white border-2 border-[#E1E8EE] p-6 rounded-[32px] shadow-vibrant">

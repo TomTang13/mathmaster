@@ -21,6 +21,11 @@ export class KeyKnowledgeController {
     return this.keyKnowledgeService.findByWeekAndDay(weekId, day);
   }
 
+  @Get('user/:userId/module-stats')
+  getUserModuleStats(@Param('userId', ParseIntPipe) userId: number) {
+    return this.keyKnowledgeService.getUserModuleStats(userId);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.keyKnowledgeService.findOne(id);
