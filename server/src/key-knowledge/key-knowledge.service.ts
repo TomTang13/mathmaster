@@ -75,7 +75,7 @@ export class KeyKnowledgeService {
       WHERE q.knowledge_id IS NOT NULL
       GROUP BY kk.module, kk.id, kk.knowledge_text, kk.week_id
       HAVING COUNT(ua.id) > 0
-      ORDER BY kk.module, kk.week_id, kk.id
+      ORDER BY kk.module, kk.id
     `;
     
     const results = await this.dataSource.query(query, [userId]);
