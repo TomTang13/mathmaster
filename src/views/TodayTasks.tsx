@@ -955,6 +955,7 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
                 questions={selectedTask.questions || []}
                 title={selectedTask.title}
                 taskId={selectedTask.id}
+                userId={userId || 0}
                 onComplete={handleTaskComplete}
                 onCancel={() => { setIsQuizActive(false); }}
               />

@@ -54,4 +54,9 @@ export class UsersController {
   ) {
     return this.usersService.uploadAudio(id, questionId, file);
   }
+
+  @Get(':id/accuracy-trend')
+  getAccuracyTrend(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.getAccuracyTrend(id);
+  }
 }

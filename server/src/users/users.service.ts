@@ -123,4 +123,50 @@ export class UsersService {
 
     return { success: true, message: '音频上传成功' };
   }
+
+  async getAccuracyTrend(userId: number): Promise<any[]> {
+    // 获取近7天的日期
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+
+    // 查询每天的正确率
+    const result = await this.dataSource.query(`
+      SELECT 
+        DATE(created_at) as date,
+        CAST(COUNT(CASE WHEN is_correct = 1 THEN 1 END) AS UNSIGNED) as correctCount,
+        CAST(COUNT(*) AS UNSIGNED) as totalCount
+      FROM user_answers 
+      WHERE userid = ?
+      GROUP BY DATE(created_at)
+    `, [userId]);
+
+    console.log('Accuracy trend query result:', result);
+
+    // 转换结果为前端需要的格式
+    const resultMap = new Map();
+    result.forEach(item => {
+      // 转换查询结果中的日期为YYYY-MM-DD格式
+      const dateKey = new Date(item.date).toISOString().split('T')[0];
+      resultMap.set(dateKey, item);
+    });
+
+    // 填充所有日期的数据
+    const trendData = dates.map(date => {
+      const item = resultMap.get(date);
+      const accuracy = item ? Math.round((Number(item.correctCount) / Number(item.totalCount)) * 100) : 0;
+      const totalCount = item ? Number(item.totalCount) : 0;
+      const dateStr = date.split('-').slice(1).join('.');
+      return {
+        day: dateStr === new Date().toISOString().split('T')[0].split('-').slice(1).join('.') ? '今日' : dateStr,
+        accuracy,
+        totalCount
+      };
+    });
+
+    return trendData;
+  }
 }

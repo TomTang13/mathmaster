@@ -13,7 +13,17 @@ interface StatsViewProps {
 
 export default function StatsView({ userState, userId }: StatsViewProps) {
   const [moduleStats, setModuleStats] = useState<ModuleData[]>([]);
-  const [showKnowledgeStats, setShowKnowledgeStats] = useState(false);
+  const [showKnowledgeStats, setShowKnowledgeStats] = useState(true);
+  const [trendData, setTrendData] = useState([
+    { day: '04.10', accuracy: 65 },
+    { day: '04.11', accuracy: 72 },
+    { day: '04.12', accuracy: 68 },
+    { day: '04.13', accuracy: 80 },
+    { day: '04.14', accuracy: 78 },
+    { day: '04.15', accuracy: 85 },
+    { day: '今日', accuracy: 92 },
+  ]);
+  const [totalAnswers, setTotalAnswers] = useState(0);
 
   // 获取用户知识点统计数据
   useEffect(() => {
@@ -30,22 +40,45 @@ export default function StatsView({ userState, userId }: StatsViewProps) {
     }
   }, [userId, showKnowledgeStats]);
 
+  // 获取正确率趋势数据
+  useEffect(() => {
+    if (userId) {
+      fetch(`${API_BASE_URL}/users/${userId}/accuracy-trend`)
+        .then(res => res.json())
+        .then(data => {
+          console.log('Accuracy trend data:', data);
+          if (data.trendData && data.trendData.length > 0) {
+            setTrendData(data.trendData);
+          }
+          if (data.totalAnswers) {
+            setTotalAnswers(data.totalAnswers);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch accuracy trend:', err);
+        });
+    }
+  }, [userId]);
+
+  // 计算7日综合正确率（排除没有答题的日期）
+  const calculateOverallAccuracy = () => {
+    // 过滤出有答题记录的日期
+    const daysWithAnswers = trendData.filter(day => day.totalCount > 0);
+    
+    if (daysWithAnswers.length === 0) return 0;
+    
+    const totalCorrect = daysWithAnswers.reduce((sum, day) => sum + day.accuracy, 0);
+    return Math.round(totalCorrect / daysWithAnswers.length);
+  };
+
+
+
   const radarData = [
     { subject: '计算自动化', A: userState.mastery.calculation, fullMark: 100 },
     { subject: '应用题模型', A: userState.mastery.wordProblem, fullMark: 100 },
     { subject: '几何与空间', A: userState.mastery.geometry, fullMark: 100 },
     { subject: '代数思维', A: userState.mastery.algebra, fullMark: 100 },
     { subject: '统计图表', A: userState.mastery.statistics, fullMark: 100 },
-  ];
-
-  const trendData = [
-    { day: '04.10', accuracy: 65 },
-    { day: '04.11', accuracy: 72 },
-    { day: '04.12', accuracy: 68 },
-    { day: '04.13', accuracy: 80 },
-    { day: '04.14', accuracy: 78 },
-    { day: '04.15', accuracy: 85 },
-    { day: '今日', accuracy: 92 },
   ];
 
   return (
@@ -78,34 +111,12 @@ export default function StatsView({ userState, userId }: StatsViewProps) {
         </div>
       )}
 
-      {/* Radar Mastery Chart */}
-      <div className="bg-white border-2 border-[#E1E8EE] p-6 rounded-[32px] shadow-vibrant">
-        <h3 className="text-sm font-bold text-text-vmuted text-center mb-6 uppercase tracking-widest">五维能力雷达</h3>
-        <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-              <PolarGrid stroke="#E1E8EE" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#7F8C8D', fontSize: 11, fontWeight: 600 }} />
-              <Radar
-                name="Mastery"
-                dataKey="A"
-                stroke="#4A90E2"
-                strokeWidth={4}
-                fill="#4A90E2"
-                fillOpacity={0.15}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
       {/* Trend Line Chart */}
       <div className="bg-white border-2 border-[#E1E8EE] p-8 rounded-[32px] shadow-vibrant">
         <div className="flex justify-between items-end mb-8">
           <h3 className="text-sm font-bold text-text-vmuted uppercase tracking-widest">近7日正确率走势</h3>
           <div className="flex items-center text-success-green font-bold text-lg">
-            <ArrowUpRight size={20} className="mr-1" />
-            <span>+12%</span>
+            <span>{calculateOverallAccuracy()}%</span>
           </div>
         </div>
         <div className="h-[180px] w-full">
@@ -130,24 +141,31 @@ export default function StatsView({ userState, userId }: StatsViewProps) {
         </div>
       </div>
 
-      {/* Weekly Medal Report Card */}
-      <div className="bg-white border-4 border-primary-blue rounded-[32px] p-8 relative overflow-hidden shadow-vibrant">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-blue/5 blur-[50px] rounded-full" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-primary-blue text-xs font-bold uppercase tracking-widest mb-4">
-            <span className="w-8 h-[2px] bg-primary-blue" />
-            本周战报
-          </div>
-          <h2 className="text-2xl font-bold leading-tight mb-4 text-text-main">
-            你比上周的自己 <br /> 
-            进步了 <span className="text-primary-blue text-4xl">12%</span>
-          </h2>
-          <p className="text-text-vmuted text-sm leading-relaxed mb-8 font-medium">
-            本周你成功消灭了“相遇问题”这个拦路虎，方程思维初步觉醒，计算稳定性显著提升。
-          </p>
-          <button className="w-full bg-accent-orange text-white py-4 rounded-xl font-bold transition-transform active:scale-95 shadow-lg shadow-orange-200">
-            生成本周成就图
-          </button>
+      {/* 近7日答题数量走势 */}
+      <div className="bg-white border-2 border-[#E1E8EE] p-8 rounded-[32px] shadow-vibrant">
+        <div className="flex justify-between items-end mb-8">
+          <h3 className="text-sm font-bold text-text-vmuted uppercase tracking-widest">近7日答题数量走势</h3>
+          <div className="font-bold text-lg">{totalAnswers} 题</div>
+        </div>
+        <div className="h-[180px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={trendData}>
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#7F8C8D', fontSize: 11, fontWeight: 500 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#7F8C8D', fontSize: 11, fontWeight: 500 }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '16px', border: '2px solid #E1E8EE', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                itemStyle={{ color: '#4A90E2', fontWeight: 'bold' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="totalCount" 
+                stroke="#4A90E2" 
+                strokeWidth={5} 
+                dot={{ fill: '#4A90E2', strokeWidth: 3, r: 5, stroke: '#fff' }}
+                activeDot={{ r: 7, strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

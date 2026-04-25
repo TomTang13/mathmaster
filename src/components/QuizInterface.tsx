@@ -13,9 +13,10 @@ interface QuizInterfaceProps {
   onCancel: () => void;
   title: string;
   taskId?: string;
+  userId: number;
 }
 
-export default function QuizInterface({ questions, onComplete, onCancel, title, taskId }: QuizInterfaceProps) {
+export default function QuizInterface({ questions, onComplete, onCancel, title, taskId, userId }: QuizInterfaceProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -23,16 +24,6 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
   const [score, setScore] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showNextButton, setShowNextButton] = useState(false);
-
-  // 获取用户ID（这里假设从localStorage或全局状态获取）
-  const getUserId = () => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      return user.id;
-    }
-    return 1; // 默认用户ID
-  };
 
   const currentQuestion = questions[currentIndex];
 
@@ -74,7 +65,6 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
 
   // 记录用户答题
   const recordUserAnswer = async (questionId: string, userAnswer: string, isCorrect: boolean) => {
-    const userId = getUserId();
     try {
       const response = await fetch(`${API_BASE}/user-answers`, {
         method: 'POST',
@@ -92,7 +82,7 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
       if (!response.ok) {
         throw new Error('Failed to record answer');
       }
-      console.log('Answer recorded successfully');
+      console.log('Answer recorded successfully for user', userId);
     } catch (error) {
       console.error('Error recording answer:', error);
     }
