@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Quote, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { VERSION, BUILD_NUMBER } from '../config/version';
 
 const QUOTES = [
   { text: "在这个世界上，只有你可以决定自己的价值。", type: "philosophy", author: "拉克丝 · 英雄联盟" },
@@ -101,6 +102,15 @@ export default function SplashScreen({ onComplete, username, error = false }: Sp
             className="absolute bottom-10 text-text-vmuted text-xs font-semibold tracking-widest uppercase"
           >
             欢迎回来，{username || '学霸'}
+          </motion.div>
+          
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.4 }}
+            className="absolute bottom-4 text-text-vmuted text-xs font-medium"
+          >
+            版本: {VERSION} (Build: {BUILD_NUMBER})
           </motion.div>
         </motion.div>
       )}
