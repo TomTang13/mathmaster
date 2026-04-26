@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { MistakeItem } from '../types';
 import { API_BASE_URL } from '../config';
+import { FeynmanStudio } from '../components/FeynmanStudio';
 
 interface QuestionDetail {
   questionId: string;
@@ -13,6 +14,7 @@ interface QuestionDetail {
   explanation: string;
   questionTypeId: number;
   difficultyId: number;
+  audioPath?: string;
 }
 
 interface MistakeRangeProps {
@@ -35,13 +37,10 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showAnswers, setShowAnswers] = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
-  
-  // 录音相关状态
-  const [isRecording, setIsRecording] = useState<Record<string, boolean>>({});
-  const [audioBlob, setAudioBlob] = useState<Record<string, Blob>>({});
-  const [audioUrl, setAudioUrl] = useState<Record<string, string>>({});
-  const [mediaRecorder, setMediaRecorder] = useState<Record<string, MediaRecorder | null>>({});
-  const [stream, setStream] = useState<Record<string, MediaStream | null>>({});
+
+  // 费曼输出室相关状态
+  const [showFeynmanStudio, setShowFeynmanStudio] = useState(false);
+  const [currentMistakeQuestion, setCurrentMistakeQuestion] = useState<any>(null);
 
   // 切换显示隐藏状态
   const handleShowHiddenToggle = () => {
@@ -53,31 +52,47 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
   };
   const [loading, setLoading] = useState(false);
 
-  // 获取错题详细信息
+  // 获取错题详细信息（包含费曼录音路径）
   const fetchQuestionDetail = async (questionId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/questions/${questionId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setQuestionDetails(prev => ({
-          ...prev,
-          [questionId]: data
-        }));
-      } else {
-        // 题目不存在，使用默认数据
-        setQuestionDetails(prev => ({
-          ...prev,
-          [questionId]: {
-            questionId,
-            questionBody: `题目 ${questionId}`,
-            options: [],
-            answer: '',
-            explanation: '暂无解析',
-            questionTypeId: 4, // 默认为单选题
-            difficultyId: 1
-          }
-        }));
+      // 同时获取题目详情和用户错题记录
+      const [questionResponse, mistakeResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/questions/${questionId}`),
+        fetch(`${API_BASE_URL}/mistakes/${userId}/question/${questionId}`)
+      ]);
+      
+      let questionData: any = {
+        questionId,
+        questionBody: `题目 ${questionId}`,
+        options: [],
+        answer: '',
+        explanation: '暂无解析',
+        questionTypeId: 4,
+        difficultyId: 1
+      };
+      
+      // 获取题目详情
+      if (questionResponse.ok) {
+        const questionJson = await questionResponse.json();
+        questionData = {
+          ...questionData,
+          ...questionJson
+        };
       }
+      
+      // 获取错题记录（包含audioPath）
+      if (mistakeResponse.ok) {
+        const mistakeData = await mistakeResponse.json();
+        if (mistakeData.audioPath) {
+          questionData.audioPath = mistakeData.audioPath;
+        }
+      }
+      
+      setQuestionDetails(prev => ({
+        ...prev,
+        [questionId]: questionData
+      }));
+      
     } catch (error) {
       console.error('Failed to fetch question detail:', error);
       // 网络错误，使用默认数据
@@ -100,17 +115,22 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
   const toggleHidden = async (questionId: string) => {
     if (!userId) return;
     
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await fetch(`${API_BASE_URL}/mistakes/${userId}/question/${questionId}/hidden`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
+      
       if (response.ok) {
-        // 重新获取错题列表
-        onRefresh(userId, showHidden);
+        setHiddenIds(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(questionId)) {
+            newSet.delete(questionId);
+          } else {
+            newSet.add(questionId);
+          }
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Failed to toggle hidden status:', error);
@@ -149,101 +169,25 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
     });
   };
 
-  // 开始录音
-  const startRecording = async (questionId: string) => {
-    try {
-      // 获取麦克风权限
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setStream(prev => ({ ...prev, [questionId]: mediaStream }));
-      
-      // 创建 MediaRecorder 实例
-      const recorder = new MediaRecorder(mediaStream);
-      setMediaRecorder(prev => ({ ...prev, [questionId]: recorder }));
-      
-      const chunks: Blob[] = [];
-      
-      // 录制数据
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-      
-      // 录制结束
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        setAudioBlob(prev => ({ ...prev, [questionId]: blob }));
-        
-        // 创建音频 URL 用于播放
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(prev => ({ ...prev, [questionId]: url }));
-        
-        // 上传录音
-        if (userId) {
-          uploadRecording(userId, questionId, blob);
-        }
-      };
-      
-      // 开始录制
-      recorder.start();
-      setIsRecording(prev => ({ ...prev, [questionId]: true }));
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      alert('无法访问麦克风，请检查权限设置');
-    }
-  };
-
-  // 停止录音
-  const stopRecording = (questionId: string) => {
-    const recorder = mediaRecorder[questionId];
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop();
-    }
-    
-    // 停止媒体流
-    const mediaStream = stream[questionId];
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-    }
-    
-    setIsRecording(prev => ({ ...prev, [questionId]: false }));
-  };
-
-  // 播放录音
-  const playRecording = (questionId: string) => {
-    const url = audioUrl[questionId];
-    if (url) {
-      const audio = new Audio(url);
-      audio.play();
-    }
-  };
-
-  // 上传录音到服务器
-  const uploadRecording = async (userId: number, questionId: string, blob: Blob) => {
-    try {
-      const formData = new FormData();
-      formData.append('audio', blob, `${questionId}.wav`);
-      
-      const response = await fetch(`${API_BASE_URL}/users/${userId}/audio?questionId=${questionId}`, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (response.ok) {
-        console.log('录音上传成功');
-      } else {
-        console.error('录音上传失败:', response.status);
-      }
-    } catch (error) {
-      console.error('上传录音时出错:', error);
-    }
-  };
-
   // 组件加载时，默认不展开所有错题
   React.useEffect(() => {
     // 不设置expandedIds，保持默认的空集合
     // 不为每个错题获取详情，只有在用户展开时才获取
   }, [mistakes, questionDetails]);
+
+  // 打开费曼输出室
+  const openFeynmanStudio = async (mistake: MistakeItem) => {
+    // 先获取最新的题目详情和录音路径
+    await fetchQuestionDetail(mistake.id);
+    
+    const questionData = {
+      questionId: mistake.id,
+      questionBody: mistake.questionBody || mistake.title,
+      audioPath: questionDetails[mistake.id]?.audioPath
+    };
+    setCurrentMistakeQuestion(questionData);
+    setShowFeynmanStudio(true);
+  };
 
   const filteredMistakes = mistakes.filter(m => {
     const isHidden = m.hidden || false;
@@ -258,12 +202,12 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-text-main">深境螺旋</h1>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={handleShowHiddenToggle}
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-bold transition-all border-2",
-                showHidden 
-                  ? "bg-primary-blue text-white border-primary-blue shadow-vibrant" 
+                showHidden
+                  ? "bg-primary-blue text-white border-primary-blue shadow-vibrant"
                   : "bg-white text-text-vmuted border-[#E1E8EE]"
               )}
             >
@@ -282,8 +226,8 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
               onClick={() => setActiveCategory(cat.id)}
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-2",
-                activeCategory === cat.id 
-                  ? "bg-primary-blue text-white border-primary-blue shadow-vibrant" 
+                activeCategory === cat.id
+                  ? "bg-primary-blue text-white border-primary-blue shadow-vibrant"
                   : "bg-white text-text-vmuted border-[#E1E8EE]"
               )}
             >
@@ -312,8 +256,8 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase",
-                    mistake.category === '解答题' ? "bg-indigo-100 text-indigo-600" : 
-                    mistake.category === '单选题' ? "bg-blue-100 text-blue-600" : 
+                    mistake.category === '解答题' ? "bg-indigo-100 text-indigo-600" :
+                    mistake.category === '单选题' ? "bg-blue-100 text-blue-600" :
                     "bg-orange-100 text-orange-600"
                   )}>
                     {mistake.category}
@@ -345,7 +289,7 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
                 <h4 className="text-text-main font-bold text-lg leading-snug flex-1">
                   {mistake.questionBody || questionDetails[mistake.id]?.questionBody || mistake.title}
                 </h4>
-                <button 
+                <button
                   onClick={() => toggleExpanded(mistake.id)}
                   className="p-2 rounded-full hover:bg-slate-100 transition-colors"
                 >
@@ -373,34 +317,33 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
                       </div>
                     )}
 
-                    {/* 看解答按钮 */}
+                    {/* 看解答和费曼输出按钮 */}
                     <div className="flex gap-3 mb-4">
-                      <button 
+                      <button
                         onClick={() => toggleShowAnswer(mistake.id)}
                         className="flex-1 flex items-center justify-center gap-2 bg-primary-blue text-white py-3 rounded-xl font-bold text-sm shadow-vibrant active:scale-95 transition-transform"
                       >
                         {showAnswers.has(mistake.id) ? '隐藏解答' : '看解答'}
                       </button>
-                      <button 
-                        onClick={() => isRecording[mistake.id] ? stopRecording(mistake.id) : startRecording(mistake.id)}
+                      <button
+                        onClick={() => openFeynmanStudio(mistake)}
                         className="flex-1 flex items-center justify-center gap-2 bg-accent-orange text-white py-3 rounded-xl font-bold text-sm shadow-vibrant active:scale-95 transition-transform"
                       >
                         <Mic size={18} />
-                        {isRecording[mistake.id] ? '停止录音' : '费曼输出室'}
+                        费曼输出室
                       </button>
                     </div>
 
-                    {/* 录音播放控制 */}
-                    {audioUrl[mistake.id] && (
+                    {/* 已有录音播放控制 */}
+                    {questionDetails[mistake.id]?.audioPath && (
                       <div className="mb-4 p-4 bg-orange-50 rounded-xl border border-orange-100">
                         <div className="flex items-center justify-between">
                           <span className="text-orange-800 font-medium text-sm">费曼录音</span>
-                          <button 
-                            onClick={() => playRecording(mistake.id)}
-                            className="bg-white text-orange-600 px-3 py-1 rounded-lg text-xs font-bold shadow-sm hover:bg-orange-100 transition-colors"
-                          >
-                            播放录音
-                          </button>
+                          <audio
+                            src={`${API_BASE_URL}${questionDetails[mistake.id].audioPath}`}
+                            controls
+                            className="h-10"
+                          />
                         </div>
                       </div>
                     )}
@@ -427,7 +370,7 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
                       )}
                     </AnimatePresence>
 
-                    <button 
+                    <button
                       onClick={() => toggleHidden(mistake.id)}
                       className="w-full py-2 text-text-vmuted hover:text-text-main transition-colors text-sm font-medium"
                       disabled={loading}
@@ -449,10 +392,34 @@ export default function MistakeRange({ mistakes, userId, onRefresh }: MistakeRan
         <div>
           <h5 className="font-bold text-text-main text-sm">什么是费曼输出？</h5>
           <p className="text-xs text-text-vmuted mt-1 leading-relaxed">
-            按下麦克风，试着像老师一样讲出这道题。讲顺了，脑袋里的知识点就真正“焊死”了。
+            按下麦克风，试着像老师一样讲出这道题。讲顺了，脑袋里的知识点就真正"焊死"了。
           </p>
         </div>
       </div>
+
+      {/* 费曼输出室 */}
+      {showFeynmanStudio && currentMistakeQuestion && userId && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        >
+          <FeynmanStudio
+            question={currentMistakeQuestion}
+            userId={userId}
+            existingAudioPath={currentMistakeQuestion.audioPath}
+            onComplete={() => {
+              setShowFeynmanStudio(false);
+              setCurrentMistakeQuestion(null);
+              // 刷新题目详情以获取最新的audioPath
+              if (currentMistakeQuestion.questionId) {
+                fetchQuestionDetail(currentMistakeQuestion.questionId);
+              }
+            }}
+          />
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { UserMistake } from './user-mistake.entity';
 import { QuestionsService } from '../questions/questions.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class UserMistakesService {
@@ -198,5 +200,57 @@ export class UserMistakesService {
     }
 
     return this.userMistakesRepository.save(mistake);
+  }
+
+  // 上传费曼输出音频
+  async uploadFeynmanAudio(userId: number, questionId: string, file: Express.Multer.File): Promise<{ success: boolean; message: string; audioPath?: string }> {
+    // 查找错题记录
+    const mistake = await this.userMistakesRepository.findOne({
+      where: { userId, questionId },
+    });
+
+    if (!mistake) {
+      throw new NotFoundException('错题记录不存在');
+    }
+
+    // 创建音频存储目录
+    const audioDir = path.join(process.cwd(), 'audio', userId.toString());
+    if (!fs.existsSync(audioDir)) {
+      fs.mkdirSync(audioDir, { recursive: true });
+    }
+
+    // 生成唯一的文件名
+    const timestamp = Date.now();
+    const fileName = `${questionId}_${timestamp}.wav`;
+    const fullPath = path.join(audioDir, fileName);
+    
+    // 相对路径（用于数据库存储）
+    const relativePath = `/audio/${userId}/${fileName}`;
+
+    // 写入文件
+    fs.writeFileSync(fullPath, file.buffer);
+
+    // 更新错题记录，保存音频路径
+    mistake.audioPath = relativePath;
+    await this.userMistakesRepository.save(mistake);
+
+    return { 
+      success: true, 
+      message: '音频上传成功',
+      audioPath: relativePath
+    };
+  }
+
+  // 获取单个错题记录
+  async getMistake(userId: number, questionId: string): Promise<UserMistake> {
+    const mistake = await this.userMistakesRepository.findOne({
+      where: { userId, questionId },
+    });
+
+    if (!mistake) {
+      throw new NotFoundException('错题记录不存在');
+    }
+
+    return mistake;
   }
 }

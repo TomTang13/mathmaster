@@ -42,6 +42,9 @@ export class UserMistake {
   @Column({ name: 'review4_completed', default: false })
   review4Completed: boolean;
 
+  @Column({ name: 'audio_path', nullable: true, type: 'text' })
+  audioPath: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

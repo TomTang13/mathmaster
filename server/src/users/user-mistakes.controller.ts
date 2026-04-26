@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Put, Param, Body, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Put, Param, Body, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserMistakesService } from './user-mistakes.service';
 import { UserMistake } from './user-mistake.entity';
 
@@ -68,5 +69,25 @@ export class UserMistakesController {
     @Param('questionId') questionId: string
   ): Promise<UserMistake> {
     return this.userMistakesService.markReviewComplete(userId, questionId);
+  }
+
+  // 上传费曼输出音频
+  @Post(':userId/question/:questionId/feynman-audio')
+  @UseInterceptors(FileInterceptor('audio'))
+  async uploadFeynmanAudio(
+    @Param('userId') userId: number,
+    @Param('questionId') questionId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userMistakesService.uploadFeynmanAudio(userId, questionId, file);
+  }
+
+  // 获取单个错题记录（包含费曼录音路径）
+  @Get(':userId/question/:questionId')
+  async getMistake(
+    @Param('userId') userId: number,
+    @Param('questionId') questionId: string
+  ): Promise<UserMistake> {
+    return this.userMistakesService.getMistake(userId, questionId);
   }
 }

@@ -4,6 +4,7 @@ import { X, CheckCircle2, AlertCircle, ArrowRight, Star, Trophy, Copy, Check } f
 import { cn } from '../lib/utils';
 import { Question } from '../types';
 import { API_BASE_URL } from '../config';
+import { FeynmanStudio } from './FeynmanStudio';
 
 const API_BASE = API_BASE_URL;
 
@@ -14,9 +15,10 @@ interface QuizInterfaceProps {
   title: string;
   taskId?: string;
   userId: number;
+  isReviewTask?: boolean;
 }
 
-export default function QuizInterface({ questions, onComplete, onCancel, title, taskId, userId }: QuizInterfaceProps) {
+export default function QuizInterface({ questions, onComplete, onCancel, title, taskId, userId, isReviewTask = false }: QuizInterfaceProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -24,6 +26,19 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
   const [score, setScore] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showNextButton, setShowNextButton] = useState(false);
+  const [showFeynmanStudio, setShowFeynmanStudio] = useState(false);
+
+  // 防护：如果questions为空数组，渲染加载状态
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="bg-white w-full max-w-sm rounded-[32px] p-8 text-center shadow-2xl border-4 border-[#E1E8EE]">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-text-vmuted">题目加载中...</p>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestion = questions[currentIndex];
 
@@ -97,7 +112,12 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
       setUserInput('');
       setShowNextButton(false);
     } else {
-      setIsFinished(true);
+      // 如果是复习任务，直接完成，不显示费曼输出室
+      if (isReviewTask) {
+        setIsFinished(true);
+      } else {
+        setShowFeynmanStudio(true);
+      }
     }
   };
 
@@ -154,7 +174,17 @@ export default function QuizInterface({ questions, onComplete, onCancel, title, 
 
   return (
     <AnimatePresence mode="wait">
-      {isFinished ? (
+      {showFeynmanStudio ? (
+        <FeynmanStudio
+          question={currentQuestion}
+          userId={userId}
+          existingAudioPath={currentQuestion.audioPath}
+          onComplete={() => {
+            setShowFeynmanStudio(false);
+            setIsFinished(true);
+          }}
+        />
+      ) : isFinished ? (
         <motion.div 
           key="finish"
           initial={{ opacity: 0, scale: 0.9 }}

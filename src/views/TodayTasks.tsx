@@ -309,10 +309,14 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
 
   const handleTaskClick = async (task: DayTask) => {
     setSelectedTask(task);
+    
     // 如果任务没有题目数据，加载题目
     if (!task.questions || task.questions.length === 0) {
       await loadTaskQuestions(task.id);
     }
+    
+    // 题目加载完成后，启动Quiz
+    setIsQuizActive(true);
   };
 
   const fetchUserAnswersWithQuestions = async (taskId: string) => {
@@ -391,7 +395,7 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
   useEffect(() => {
     if (userId && userId > 0) {
       refreshTasksData();
-      // 不在初始化时加载错题回顾数据，等到用户需要时再加载
+      fetchReviewMistakes();
     }
   }, [week, day, level, userId, loginRefreshKey]);
 
@@ -932,14 +936,7 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
                     </div>
                   ) : (
                     <button
-                      onClick={() => {
-                        if (selectedTask.questions && selectedTask.questions.length > 0) {
-                          setIsQuizActive(true);
-                        } else {
-                          onTaskClick(selectedTask.id);
-                          setSelectedTask(null);
-                        }
-                      }}
+                      onClick={() => handleTaskClick(selectedTask)}
                       className={cn(
                         "w-full py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 bg-primary-blue text-white shadow-blue-200 hover:shadow-blue-300"
                       )}
@@ -958,6 +955,7 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
                 userId={userId || 0}
                 onComplete={handleTaskComplete}
                 onCancel={() => { setIsQuizActive(false); }}
+                isReviewTask={selectedTask.type === 'review' || selectedTask.type === 'mistake'}
               />
             )}
           </div>
