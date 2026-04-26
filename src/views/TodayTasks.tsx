@@ -6,6 +6,7 @@ import { DayTask } from '../types';
 import QuizInterface from '../components/QuizInterface';
 import { CURRICULUM_DATA } from '../data/curriculum';
 import { API_BASE_URL } from '../config';
+import { VERSION, BUILD_NUMBER } from '../config/version';
 
 const API_BASE = API_BASE_URL;
 
@@ -682,6 +683,13 @@ export default function TodayTasks({ tasks, onTaskClick, onPdfClick, week, day, 
             )}
           </AnimatePresence>
         )}
+      </div>
+
+      {/* 版本号显示 */}
+      <div className="mt-8 mb-4 text-center">
+        <p className="text-xs text-text-vmuted font-medium">
+          版本: {VERSION} (Build: {BUILD_NUMBER})
+        </p>
       </div>
 
       <AnimatePresence mode="wait">
