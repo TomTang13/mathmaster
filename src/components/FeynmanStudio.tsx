@@ -201,7 +201,7 @@ export const FeynmanStudio: React.FC<FeynmanStudioProps> = ({
           </div>
           <audio
             ref={audioRef}
-            src={existingAudioPath ? `${API_BASE_URL}${existingAudioPath}` : audioUrl}
+            src={existingAudioPath ? `${window.location.origin}${existingAudioPath}` : audioUrl}
             onEnded={handleAudioEnded}
             className="w-full h-10"
             controls
