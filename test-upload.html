@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频上传测试</title>
+</head>
+<body>
+    <h1>音频上传测试</h1>
+    <input type="file" id="audioFile" accept="audio/*">
+    <button onclick="uploadAudio()">上传</button>
+    <div id="result"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001';
+
+        async function uploadAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请选择音频文件');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', file, 'test.wav');
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/mistakes/1/question/test123/feynman-audio`,
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+                } else {
+                    document.getElementById('result').textContent = '上传失败: ' + response.status;
+                }
+            } catch (error) {
+                document.getElementById('result').textContent = '错误: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

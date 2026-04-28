@@ -29,7 +29,7 @@ async function bootstrap() {
   }));
 
   // 配置静态文件服务，用于提供音频文件
-  app.use('/audio', express.static(path.join(__dirname, '..', 'audio'), {
+  app.use('/audio', express.static(path.join(__dirname, '..', '..', 'audio'), {
     setHeaders: (res, filePath, stat) => {
       if (filePath.endsWith('.wav') || filePath.endsWith('.mp3')) {
         // 设置Content-Type为音频

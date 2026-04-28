@@ -213,8 +213,8 @@ export class UserMistakesService {
       throw new NotFoundException('错题记录不存在');
     }
 
-    // 创建音频存储目录
-    const audioDir = path.join(process.cwd(), 'audio', userId.toString());
+    // 创建音频存储目录（使用相对路径，兼容本地和线上环境）
+    const audioDir = path.join(__dirname, '..', '..', 'audio', userId.toString());
     if (!fs.existsSync(audioDir)) {
       fs.mkdirSync(audioDir, { recursive: true });
     }
